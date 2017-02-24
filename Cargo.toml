@@ -1,0 +1,11 @@
+[package]
+name = "trappist"
+version = "0.1.0"
+authors = ["Sven Nilsen <bvssvni@gmail.com>"]
+description = "A multiplayer VR space war game in the Trappist system"
+license = "MIT"
+keywords = ["game engine", "vr", "multiplayer"]
+repository = "https://github.com/bvssvni/trappist.git"
+homepage = "https://github.com/bvssvni/trappist"
+
+[dependencies]
