@@ -9,3 +9,4 @@ repository = "https://github.com/bvssvni/trappist.git"
 homepage = "https://github.com/bvssvni/trappist"
 
 [dependencies]
+monotonic_solver = "0.2.1"
