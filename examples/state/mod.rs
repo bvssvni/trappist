@@ -45,6 +45,8 @@ pub struct State {
     alice: Option<usize>,
     /// Reference to the Bob player.
     bob: Option<usize>,
+    /// Reference to the Carl player.
+    carl: Option<usize>,
 }
 
 impl State {
@@ -72,6 +74,7 @@ impl State {
             xv43: None,
             alice: None,
             bob: None,
+            carl: None,
         }
     }
 
@@ -238,6 +241,7 @@ impl State {
         match player {
             Alice => &mut self.alice,
             Bob => &mut self.bob,
+            Carl => &mut self.carl,
         }
     }
 
@@ -285,6 +289,26 @@ impl State {
         let player_id = self.player_mut(player).ok_or(())?;
         let species_id = self.species_mut(species).ok_or(())?;
         world.players[player_id].species = Some(species_id);
+        Ok(())
+    }
+
+    pub fn destroy_planet(
+        &mut self,
+        planet: PlanetName,
+        world: &mut World
+    ) -> Result<(), ()> {
+        let planet_id = self.planet_mut(planet).ok_or(())?;
+        world.planets[planet_id].destroyed = true;
+        Ok(())
+    }
+
+    pub fn kill(
+        &mut self,
+        player: PlayerName,
+        world: &mut World
+    ) -> Result<(), ()> {
+        let player_id = self.player_mut(player).ok_or(())?;
+        world.players[player_id].dead = true;
         Ok(())
     }
 }

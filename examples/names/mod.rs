@@ -119,6 +119,7 @@ impl WeaponName {
 pub enum PlayerName {
     Alice,
     Bob,
+    Carl,
 }
 
 impl PlayerName {
@@ -126,6 +127,7 @@ impl PlayerName {
         &[
             Alice,
             Bob,
+            Carl,
         ]
     }
 }

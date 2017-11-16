@@ -6,6 +6,7 @@ pub struct Planet {
     pub orbit: Option<usize>,
     pub cities: [Option<usize>; LOCATIONS_PER_PLANET],
     pub spaceports: [Option<usize>; LOCATIONS_PER_PLANET],
+    pub destroyed: bool,
 }
 
 impl Planet {
@@ -56,6 +57,38 @@ pub struct Player {
     pub left_weapon: Option<usize>,
     pub right_weapon: Option<usize>,
     pub species: Option<usize>,
+    pub dead: bool,
+}
+
+impl Player {
+    pub fn has_weapons(&self) -> bool {
+        self.left_weapon.is_some() ||
+        self.right_weapon.is_some()
+    }
+
+    /// Returns the planet to spawn from at start of game.
+    pub fn spawning_planet(&self, world: &World) -> Option<usize> {
+        if let Some(species_id) = self.species {
+            world.species[species_id].home_planet
+        } else {
+            None
+        }
+    }
+
+    /// Returns `true` is player is out of game.
+    /// This happens when the spawning planet is destroyed
+    /// and the player is dead.
+    pub fn out_of_game(&self, world: &World) -> bool {
+        if self.dead {
+            if let Some(planet_id) = self.spawning_planet(world) {
+                world.planets[planet_id].destroyed
+            } else {
+                true
+            }
+        } else {
+            false
+        }
+    }
 }
 
 pub struct World {
@@ -89,6 +122,7 @@ impl World {
             orbit: None,
             cities: [None; LOCATIONS_PER_PLANET],
             spaceports: [None; LOCATIONS_PER_PLANET],
+            destroyed: false,
         });
         id
     }
@@ -156,6 +190,7 @@ impl World {
             left_weapon: None,
             right_weapon: None,
             species: None,
+            dead: false,
         });
         id
     }
@@ -166,5 +201,49 @@ impl World {
             if player.species.is_none() {return false};
         }
         true
+    }
+
+    /// Returns `true` if all players have some weapon.
+    pub fn all_players_have_weapons(&self) -> bool {
+        for player in &self.players {
+            if !player.has_weapons() {return false};
+        }
+        true
+    }
+
+    /// Returns the number of players that are not out of the game.
+    pub fn number_of_players_left(&self) -> usize {
+        let mut sum = 0;
+        for player in &self.players {
+            if !player.out_of_game(self) {sum += 1};
+        }
+        sum
+    }
+
+    /// Returns death match winner player.
+    pub fn death_match_winner(&self) -> Option<usize> {
+        if self.number_of_players_left() == 1 {
+            for (i, player) in self.players.iter().enumerate() {
+                if !player.out_of_game(self) {return Some(i)}
+            }
+        }
+        None
+    }
+
+    /// Returns team match winner species.
+    pub fn team_match_winner(&self) -> Option<usize> {
+        let mut species: Option<usize> = None;
+        for player in &self.players {
+            if !player.out_of_game(self) {
+                if let Some(species_id) = player.species {
+                    if species.is_none() {
+                        species = Some(species_id);
+                    } else if species != Some(species_id) {
+                        return None;
+                    }
+                }
+            }
+        }
+        species
     }
 }

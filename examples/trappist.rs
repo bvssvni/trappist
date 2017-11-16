@@ -47,12 +47,16 @@ pub enum Expr {
     AssignSpecies(PlayerName, SpeciesName),
     /// Destroy spaceport.
     DestroySpaceport(PlanetName, LocationName),
+    /// Destroy planet.
+    DestroyPlanet(PlanetName),
     /// Rebuild spaceport.
     RebuildSpaceport(PlanetName, LocationName),
     /// Populates city with a number of people.
     PopulateCity(CityName, u64, SpeciesName),
     /// Drops player's weapon by hand.
     DropWeapon(PlayerName, Hand),
+    /// Kills player.
+    Kill(PlayerName),
     /// The story works out.
     Sound,
     /// The world contains planets.
@@ -89,6 +93,18 @@ pub enum Expr {
     HasWeapons(PlayerName, bool),
     /// All players have an assigned species.
     AllPlayersHaveSpecies(bool),
+    /// All players have some weapon.
+    AllPlayersHaveWeapons(bool),
+    /// Which planet a player will spawn from.
+    SpawningPlanet(PlayerName, PlanetName),
+    /// Whether player is out of game.
+    OutOfGame(PlayerName, bool),
+    /// The number of players left.
+    NumberOfPlayersLeft(usize),
+    /// Which player won death match.
+    DeathMatchWinner(PlayerName),
+    /// Which species won death match.
+    TeamMatchWinner(SpeciesName),
 }
 
 fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) -> Option<Expr> {
@@ -168,6 +184,12 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
             }
         }
 
+        if let DestroyPlanet(planet) = *expr {
+            if !state.destroy_planet(planet, world).is_ok() {
+                return None;
+            }
+        }
+
         if let RebuildSpaceport(planet, location) = *expr {
             if !state.rebuild_spaceport(planet, location, world).is_ok() {
                 return None;
@@ -182,6 +204,12 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 
         if let DropWeapon(player, hand) = *expr {
             if !state.drop_weapon(player, hand, world).is_ok() {
+                return None;
+            }
+        }
+
+        if let Kill(player) = *expr {
+            if !state.kill(player, world).is_ok() {
                 return None;
             }
         }
@@ -201,6 +229,9 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
         let new_expr = ContainsPlayers;
         if can_add(&new_expr) {return Some(new_expr)};
     }
+
+    let new_expr = NumberOfPlayersLeft(world.number_of_players_left());
+    if can_add(&new_expr) {return Some(new_expr)};
 
     for &name in PlanetName::all() {
         if let Some(planet_id) = *state.planet_mut(name) {
@@ -244,6 +275,13 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
                     }
                 }
             }
+
+            if let Some(id) = world.team_match_winner() {
+                if id == species_id {
+                    let new_expr = TeamMatchWinner(species);
+                    if can_add(&new_expr) {return Some(new_expr)};
+                }
+            }
         }
     }
 
@@ -263,6 +301,7 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
         }
     }
 
+    let death_match_winner = world.death_match_winner();
     for &player in PlayerName::all() {
         if let Some(player_id) = *state.player_mut(player) {
             if world.players[player_id].left_weapon.is_none() {
@@ -292,14 +331,37 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
                 }
             }
 
-            let has_weapons = world.players[player_id].left_weapon.is_some() ||
-                              world.players[player_id].right_weapon.is_some();
-            let new_expr = HasWeapons(player, has_weapons);
+            let new_expr = HasWeapons(player, world.players[player_id].has_weapons());
             if can_add(&new_expr) {return Some(new_expr)};
+
+            if let Some(planet_id) = world.players[player_id].spawning_planet(world) {
+                for &planet in PlanetName::all() {
+                    if let Some(id) = *state.planet_mut(planet) {
+                        if id == planet_id {
+                            let new_expr = SpawningPlanet(player, planet);
+                            if can_add(&new_expr) {return Some(new_expr)};
+                        }
+                    }
+                }
+            }
+
+            let out_of_game = world.players[player_id].out_of_game(world);
+            let new_expr = OutOfGame(player, out_of_game);
+            if can_add(&new_expr) {return Some(new_expr)};
+
+            if let Some(id) = death_match_winner {
+                if id == player_id {
+                    let new_expr = DeathMatchWinner(player);
+                    if can_add(&new_expr) {return Some(new_expr)};
+                }
+            }
         }
     }
 
     let new_expr = AllPlayersHaveSpecies(world.all_players_have_species());
+    if can_add(&new_expr) {return Some(new_expr)};
+
+    let new_expr = AllPlayersHaveWeapons(world.all_players_have_weapons());
     if can_add(&new_expr) {return Some(new_expr)};
 
     // Common sense inference.
@@ -333,15 +395,36 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
+            // Create two planets with two species.
+            CreatePlanet(Tellar),
+            CreatePlanet(Munos),
             CreateSpecies(Vatrax),
             CreateSpecies(Ralm),
+            AssignHomePlanet(Vatrax, Tellar),
+            AssignHomePlanet(Ralm, Munos),
+
+            // Create three players on two teams.
+            CreateWeapon(XV43),
             CreatePlayer(Alice),
             AssignSpecies(Alice, Vatrax),
+            AssignWeapon(Alice, XV43, Hand::Left),
             CreatePlayer(Bob),
             AssignSpecies(Bob, Ralm),
+            AssignWeapon(Bob, XV43, Hand::Right),
+            CreatePlayer(Carl),
+            AssignSpecies(Carl, Ralm),
+            AssignWeapon(Carl, XV43, Hand::Left),
+
+            // Alice's spawning planet gets destroyed and then she gets killed.
+            DestroyPlanet(Tellar),
+            Kill(Alice),
         ],
         vec![
-            AllPlayersHaveSpecies(true),
+            OutOfGame(Alice, true),
+            OutOfGame(Bob, false),
+            OutOfGame(Carl, false),
+            NumberOfPlayersLeft(2),
+            TeamMatchWinner(Ralm),
             Sound,
         ]
     )
@@ -372,6 +455,12 @@ fn main() {
             (test::has_weapon_after_dropping_only_one_weapon, true),
             (test::all_players_have_species, true),
             // 20
+            (test::all_players_have_species_and_weapons, true),
+            (test::spawning_planet, true),
+            (test::out_of_game_when_killed_and_spawning_planet_is_destroyed, true),
+            (test::not_out_of_game_when_just_killed, true),
+            (test::death_match_winner, true),
+            (test::team_match_winner, true),
         ]);
 
     let (start, goal) = test();

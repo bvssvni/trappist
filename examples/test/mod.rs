@@ -316,6 +316,192 @@ pub fn all_players_have_species() -> (Vec<Expr>, Vec<Expr>) {
     )
 }
 
+pub fn all_players_have_species_and_weapons() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateSpecies(Vatrax),
+            CreateSpecies(Ralm),
+            CreateWeapon(XV43),
+            CreatePlayer(Alice),
+            AssignSpecies(Alice, Vatrax),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            AssignSpecies(Bob, Ralm),
+            AssignWeapon(Bob, XV43, Hand::Right),
+        ],
+        vec![
+            AllPlayersHaveSpecies(true),
+            AllPlayersHaveWeapons(true),
+            Sound,
+        ]
+    )
+}
+
+pub fn spawning_planet() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            // Create two planets with two species.
+            CreatePlanet(Tellar),
+            CreatePlanet(Munos),
+            CreateSpecies(Vatrax),
+            CreateSpecies(Ralm),
+            AssignHomePlanet(Vatrax, Tellar),
+            AssignHomePlanet(Ralm, Munos),
+
+            // Create two players.
+            CreateWeapon(XV43),
+            CreatePlayer(Alice),
+            AssignSpecies(Alice, Vatrax),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            AssignSpecies(Bob, Ralm),
+            AssignWeapon(Bob, XV43, Hand::Right),
+        ],
+        vec![
+            AllPlayersHaveSpecies(true),
+            AllPlayersHaveWeapons(true),
+            SpawningPlanet(Alice, Tellar),
+            SpawningPlanet(Bob, Munos),
+            Sound,
+        ]
+    )
+}
+
+pub fn out_of_game_when_killed_and_spawning_planet_is_destroyed() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            // Create two planets with two species.
+            CreatePlanet(Tellar),
+            CreatePlanet(Munos),
+            CreateSpecies(Vatrax),
+            CreateSpecies(Ralm),
+            AssignHomePlanet(Vatrax, Tellar),
+            AssignHomePlanet(Ralm, Munos),
+
+            // Create two players.
+            CreateWeapon(XV43),
+            CreatePlayer(Alice),
+            AssignSpecies(Alice, Vatrax),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            AssignSpecies(Bob, Ralm),
+            AssignWeapon(Bob, XV43, Hand::Right),
+
+            // Alice's spawning planet gets destroyed and then she gets killed.
+            DestroyPlanet(Tellar),
+            Kill(Alice),
+        ],
+        vec![
+            OutOfGame(Alice, true),
+            OutOfGame(Bob, false),
+            Sound,
+        ]
+    )
+}
+
+pub fn not_out_of_game_when_just_killed() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            // Create two planets with two species.
+            CreatePlanet(Tellar),
+            CreatePlanet(Munos),
+            CreateSpecies(Vatrax),
+            CreateSpecies(Ralm),
+            AssignHomePlanet(Vatrax, Tellar),
+            AssignHomePlanet(Ralm, Munos),
+
+            // Create two players.
+            CreateWeapon(XV43),
+            CreatePlayer(Alice),
+            AssignSpecies(Alice, Vatrax),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            AssignSpecies(Bob, Ralm),
+            AssignWeapon(Bob, XV43, Hand::Right),
+
+            // Alice's spawning planet gets destroyed and then she gets killed.
+            Kill(Alice),
+        ],
+        vec![
+            OutOfGame(Alice, false),
+            OutOfGame(Bob, false),
+            Sound,
+        ]
+    )
+}
+
+pub fn death_match_winner() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            // Create two planets with two species.
+            CreatePlanet(Tellar),
+            CreatePlanet(Munos),
+            CreateSpecies(Vatrax),
+            CreateSpecies(Ralm),
+            AssignHomePlanet(Vatrax, Tellar),
+            AssignHomePlanet(Ralm, Munos),
+
+            // Create two players.
+            CreateWeapon(XV43),
+            CreatePlayer(Alice),
+            AssignSpecies(Alice, Vatrax),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            AssignSpecies(Bob, Ralm),
+            AssignWeapon(Bob, XV43, Hand::Right),
+
+            // Alice's spawning planet gets destroyed and then she gets killed.
+            DestroyPlanet(Tellar),
+            Kill(Alice),
+        ],
+        vec![
+            OutOfGame(Alice, true),
+            OutOfGame(Bob, false),
+            NumberOfPlayersLeft(1),
+            DeathMatchWinner(Bob),
+            Sound,
+        ]
+    )
+}
+
+pub fn team_match_winner() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            // Create two planets with two species.
+            CreatePlanet(Tellar),
+            CreatePlanet(Munos),
+            CreateSpecies(Vatrax),
+            CreateSpecies(Ralm),
+            AssignHomePlanet(Vatrax, Tellar),
+            AssignHomePlanet(Ralm, Munos),
+
+            // Create three players on two teams.
+            CreateWeapon(XV43),
+            CreatePlayer(Alice),
+            AssignSpecies(Alice, Vatrax),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            AssignSpecies(Bob, Ralm),
+            AssignWeapon(Bob, XV43, Hand::Right),
+            CreatePlayer(Carl),
+            AssignSpecies(Carl, Ralm),
+            AssignWeapon(Carl, XV43, Hand::Left),
+
+            // Alice's spawning planet gets destroyed and then she gets killed.
+            DestroyPlanet(Tellar),
+            Kill(Alice),
+        ],
+        vec![
+            OutOfGame(Alice, true),
+            OutOfGame(Bob, false),
+            OutOfGame(Carl, false),
+            NumberOfPlayersLeft(2),
+            TeamMatchWinner(Ralm),
+            Sound,
+        ]
+    )
+}
+
 /// Checks a list of tests.
 pub fn check(fs: &[(fn() -> (Vec<Expr>, Vec<Expr>), bool)]) {
     for (i, &(f, ok)) in fs.iter().enumerate() {
