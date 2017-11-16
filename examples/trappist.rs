@@ -12,144 +12,12 @@ use WeaponName::*;
 use PlayerName::*;
 use world::*;
 use state::*;
+use names::*;
 
 mod world;
 mod state;
+mod names;
 pub mod test;
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum PlanetName {
-    Tellar,
-    Munos,
-    Sand,
-    Produm,
-    Xir,
-    Ja,
-    Karalal,
-}
-
-impl PlanetName {
-    pub fn all() -> &'static [PlanetName] {
-        return &[
-            Tellar,
-            Munos,
-            Sand,
-            Produm,
-            Xir,
-            Ja,
-            Karalal,
-        ]
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum OrbitName {
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
-    H,
-}
-
-impl OrbitName {
-    pub fn all() -> &'static [OrbitName] {
-        return &[
-            OrbitName::B,
-            OrbitName::C,
-            OrbitName::D,
-            OrbitName::E,
-            OrbitName::F,
-            OrbitName::G,
-            OrbitName::H,
-        ]
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum SpeciesName {
-    Vatrax,
-    Ralm,
-    Protrak,
-}
-
-impl SpeciesName {
-    pub fn all() -> &'static [SpeciesName] {
-        return &[
-            Vatrax,
-            Ralm,
-            Protrak,
-        ]
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum CityName {
-    Eldonar,
-    Tarat,
-}
-
-impl CityName {
-    pub fn all() -> &'static [CityName] {
-        &[
-            Eldonar,
-            Tarat,
-        ]
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-#[repr(u8)]
-pub enum LocationName {
-    A = 0,
-    B = 1,
-    C = 2,
-    D = 3,
-}
-
-impl LocationName {
-    pub fn all() -> &'static [LocationName] {
-        &[
-            LocationName::A,
-            LocationName::B,
-            LocationName::C,
-            LocationName::D,
-        ]
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum WeaponName {
-    XV43,
-}
-
-impl WeaponName {
-    pub fn all() -> &'static [WeaponName] {
-        &[
-            XV43,
-        ]
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum PlayerName {
-    Alice,
-}
-
-impl PlayerName {
-    pub fn all() -> &'static [PlayerName] {
-        &[
-            Alice,
-        ]
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum Hand {
-    Left,
-    Right,
-}
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Expr {
@@ -175,6 +43,8 @@ pub enum Expr {
     AssignLocation(CityName, PlanetName, LocationName),
     /// Assign a weapon to player.
     AssignWeapon(PlayerName, WeaponName, Hand),
+    /// Assign species to player.
+    AssignSpecies(PlayerName, SpeciesName),
     /// Destroy spaceport.
     DestroySpaceport(PlanetName, LocationName),
     /// Rebuild spaceport.
@@ -217,6 +87,8 @@ pub enum Expr {
     HandEmpty(PlayerName, Hand),
     /// Whether a player has any weapons.
     HasWeapons(PlayerName, bool),
+    /// All players have an assigned species.
+    AllPlayersHaveSpecies(bool),
 }
 
 fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) -> Option<Expr> {
@@ -280,6 +152,12 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 
         if let AssignWeapon(player, weapon, hand) = *expr {
             if !state.assign_weapon(player, weapon, hand, world).is_ok() {
+                return None;
+            }
+        }
+
+        if let AssignSpecies(player, species) = *expr {
+            if !state.assign_species(player, species, world).is_ok() {
                 return None;
             }
         }
@@ -421,6 +299,9 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
         }
     }
 
+    let new_expr = AllPlayersHaveSpecies(world.all_players_have_species());
+    if can_add(&new_expr) {return Some(new_expr)};
+
     // Common sense inference.
     for expr in story {
         if let ContainsSpecies(planet_a, a) = *expr {
@@ -452,14 +333,15 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
-            CreateWeapon(XV43),
+            CreateSpecies(Vatrax),
+            CreateSpecies(Ralm),
             CreatePlayer(Alice),
-            AssignWeapon(Alice, XV43, Hand::Left),
-            AssignWeapon(Alice, XV43, Hand::Right),
-            DropWeapon(Alice, Hand::Left),
+            AssignSpecies(Alice, Vatrax),
+            CreatePlayer(Bob),
+            AssignSpecies(Bob, Ralm),
         ],
         vec![
-            HasWeapons(Alice, true),
+            AllPlayersHaveSpecies(true),
             Sound,
         ]
     )
@@ -467,6 +349,7 @@ pub fn test() -> (Vec<Expr>, Vec<Expr>) {
 
 fn main() {
     test::check(&[
+            // 0
             (test::create_tellar, true),
             (test::create_munos, true),
             (test::create_and_assign_orbit, true),
@@ -487,6 +370,8 @@ fn main() {
             (test::hand_is_empty_after_dropping_weapon, true),
             (test::has_no_weapons_after_dropping_both_weapons, true),
             (test::has_weapon_after_dropping_only_one_weapon, true),
+            (test::all_players_have_species, true),
+            // 20
         ]);
 
     let (start, goal) = test();

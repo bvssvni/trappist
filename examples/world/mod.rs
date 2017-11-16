@@ -55,6 +55,7 @@ pub struct Weapon;
 pub struct Player {
     pub left_weapon: Option<usize>,
     pub right_weapon: Option<usize>,
+    pub species: Option<usize>,
 }
 
 pub struct World {
@@ -154,7 +155,16 @@ impl World {
         self.players.push(Player {
             left_weapon: None,
             right_weapon: None,
+            species: None,
         });
         id
+    }
+
+    /// Returns `true` if all players have an assigned species.
+    pub fn all_players_have_species(&self) -> bool {
+        for player in &self.players {
+            if player.species.is_none() {return false};
+        }
+        true
     }
 }

@@ -43,6 +43,8 @@ pub struct State {
     xv43: Option<usize>,
     /// Reference to the Alice player.
     alice: Option<usize>,
+    /// Reference to the Bob player.
+    bob: Option<usize>,
 }
 
 impl State {
@@ -69,6 +71,7 @@ impl State {
             tarat: None,
             xv43: None,
             alice: None,
+            bob: None,
         }
     }
 
@@ -234,6 +237,7 @@ impl State {
     pub fn player_mut(&mut self, player: PlayerName) -> &mut Option<usize> {
         match player {
             Alice => &mut self.alice,
+            Bob => &mut self.bob,
         }
     }
 
@@ -269,6 +273,18 @@ impl State {
             Hand::Left => world.players[player_id].left_weapon = None,
             Hand::Right => world.players[player_id].right_weapon = None,
         }
+        Ok(())
+    }
+
+    pub fn assign_species(
+        &mut self,
+        player: PlayerName,
+        species: SpeciesName,
+        world: &mut World
+    ) -> Result<(), ()> {
+        let player_id = self.player_mut(player).ok_or(())?;
+        let species_id = self.species_mut(species).ok_or(())?;
+        world.players[player_id].species = Some(species_id);
         Ok(())
     }
 }

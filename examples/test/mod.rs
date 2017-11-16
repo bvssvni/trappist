@@ -299,6 +299,23 @@ pub fn has_weapon_after_dropping_only_one_weapon() -> (Vec<Expr>, Vec<Expr>) {
     )
 }
 
+pub fn all_players_have_species() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateSpecies(Vatrax),
+            CreateSpecies(Ralm),
+            CreatePlayer(Alice),
+            AssignSpecies(Alice, Vatrax),
+            CreatePlayer(Bob),
+            AssignSpecies(Bob, Ralm),
+        ],
+        vec![
+            AllPlayersHaveSpecies(true),
+            Sound,
+        ]
+    )
+}
+
 /// Checks a list of tests.
 pub fn check(fs: &[(fn() -> (Vec<Expr>, Vec<Expr>), bool)]) {
     for (i, &(f, ok)) in fs.iter().enumerate() {
