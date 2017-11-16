@@ -50,12 +50,21 @@ pub struct Spaceport {
     pub destroyed: bool,
 }
 
+pub struct Weapon;
+
+pub struct Player {
+    pub left_weapon: Option<usize>,
+    pub right_weapon: Option<usize>,
+}
+
 pub struct World {
     pub planets: Vec<Planet>,
     pub orbits: Vec<Orbit>,
     pub species: Vec<Species>,
     pub cities: Vec<City>,
     pub spaceports: Vec<Spaceport>,
+    pub weapons: Vec<Weapon>,
+    pub players: Vec<Player>,
 }
 
 impl World {
@@ -66,6 +75,8 @@ impl World {
             species: vec![],
             cities: vec![],
             spaceports: vec![],
+            weapons: vec![],
+            players: vec![],
         }
     }
 
@@ -128,5 +139,22 @@ impl World {
         } else {
             None
         }
+    }
+
+    /// Creates a new weapon.
+    pub fn create_weapon(&mut self) -> usize {
+        let id = self.weapons.len();
+        self.weapons.push(Weapon);
+        id
+    }
+
+    /// Creates a new player.
+    pub fn create_player(&mut self) -> usize {
+        let id = self.players.len();
+        self.players.push(Player {
+            left_weapon: None,
+            right_weapon: None,
+        });
+        id
     }
 }

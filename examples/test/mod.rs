@@ -221,6 +221,84 @@ pub fn sum_population_for_planet() -> (Vec<Expr>, Vec<Expr>) {
     )
 }
 
+pub fn create_weapon() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+        ],
+        vec![
+            ContainsWeapons,
+            Sound,
+        ]
+    )
+}
+
+pub fn assign_weapon() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+        ],
+        vec![
+            ContainsWeapons,
+            ContainsPlayers,
+            HasWeapon(Alice, XV43),
+            Sound,
+        ]
+    )
+}
+
+pub fn hand_is_empty_after_dropping_weapon() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            DropWeapon(Alice, Hand::Left),
+        ],
+        vec![
+            ContainsWeapons,
+            ContainsPlayers,
+            HandEmpty(Alice, Hand::Left),
+            Sound,
+        ]
+    )
+}
+
+pub fn has_no_weapons_after_dropping_both_weapons() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            AssignWeapon(Alice, XV43, Hand::Right),
+            DropWeapon(Alice, Hand::Left),
+            DropWeapon(Alice, Hand::Right),
+        ],
+        vec![
+            HasWeapons(Alice, false),
+            Sound,
+        ]
+    )
+}
+
+pub fn has_weapon_after_dropping_only_one_weapon() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            AssignWeapon(Alice, XV43, Hand::Right),
+            DropWeapon(Alice, Hand::Left),
+        ],
+        vec![
+            HasWeapons(Alice, true),
+            Sound,
+        ]
+    )
+}
+
 /// Checks a list of tests.
 pub fn check(fs: &[(fn() -> (Vec<Expr>, Vec<Expr>), bool)]) {
     for (i, &(f, ok)) in fs.iter().enumerate() {

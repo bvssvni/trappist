@@ -8,9 +8,13 @@ use Expr::*;
 use PlanetName::*;
 use SpeciesName::*;
 use CityName::*;
+use WeaponName::*;
+use PlayerName::*;
 use world::*;
+use state::*;
 
 mod world;
+mod state;
 pub mod test;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
@@ -115,219 +119,36 @@ impl LocationName {
     }
 }
 
-pub struct State {
-    /// Reference to the Tellar planet.
-    tellar: Option<usize>,
-    /// Reference to the Munos planet.
-    munos: Option<usize>,
-    /// Reference to the Sand planet.
-    sand: Option<usize>,
-    /// Reference to the Produm planet.
-    produm: Option<usize>,
-    /// Reference to the Xir planet.
-    xir: Option<usize>,
-    /// Reference to the Ja planet.
-    ja: Option<usize>,
-    /// Reference to the Karalal planet.
-    karalal: Option<usize>,
-    /// Reference to orbit B.
-    orbit_b: Option<usize>,
-    /// Reference to orbit C.
-    orbit_c: Option<usize>,
-    /// Reference to orbit D.
-    orbit_d: Option<usize>,
-    /// Reference to orbit E.
-    orbit_e: Option<usize>,
-    /// Reference to orbit F.
-    orbit_f: Option<usize>,
-    /// Reference to orbit G.
-    orbit_g: Option<usize>,
-    /// Reference to orbit H.
-    orbit_h: Option<usize>,
-    /// Reference to the Vatrax species.
-    vatrax: Option<usize>,
-    /// Reference to the Ralm species.
-    ralm: Option<usize>,
-    /// Reference to the Protrak species.
-    protrak: Option<usize>,
-    /// Reference to the Eldonar city.
-    eldonar: Option<usize>,
-    /// Reference to the Tarat city.
-    tarat: Option<usize>,
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+pub enum WeaponName {
+    XV43,
 }
 
-impl State {
-    pub fn new() -> State {
-        State {
-            tellar: None,
-            munos: None,
-            sand: None,
-            produm: None,
-            xir: None,
-            ja: None,
-            karalal: None,
-            orbit_b: None,
-            orbit_c: None,
-            orbit_d: None,
-            orbit_e: None,
-            orbit_f: None,
-            orbit_g: None,
-            orbit_h: None,
-            vatrax: None,
-            ralm: None,
-            protrak: None,
-            eldonar: None,
-            tarat: None,
-        }
+impl WeaponName {
+    pub fn all() -> &'static [WeaponName] {
+        &[
+            XV43,
+        ]
     }
+}
 
-    pub fn planet_mut(&mut self, name: PlanetName) -> &mut Option<usize> {
-        match name {
-            Tellar => &mut self.tellar,
-            Munos => &mut self.munos,
-            Sand => &mut self.sand,
-            Produm => &mut self.produm,
-            Xir => &mut self.xir,
-            Ja => &mut self.ja,
-            Karalal => &mut self.karalal,
-        }
-    }
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+pub enum PlayerName {
+    Alice,
+}
 
-    pub fn create_planet(&mut self, name: PlanetName, world: &mut World) {
-        let id = world.create_planet();
-        *self.planet_mut(name) = Some(id);
+impl PlayerName {
+    pub fn all() -> &'static [PlayerName] {
+        &[
+            Alice,
+        ]
     }
+}
 
-    pub fn orbit_mut(&mut self, orbit: OrbitName) -> &mut Option<usize> {
-        match orbit {
-            OrbitName::B => &mut self.orbit_b,
-            OrbitName::C => &mut self.orbit_c,
-            OrbitName::D => &mut self.orbit_d,
-            OrbitName::E => &mut self.orbit_e,
-            OrbitName::F => &mut self.orbit_f,
-            OrbitName::G => &mut self.orbit_g,
-            OrbitName::H => &mut self.orbit_h,
-        }
-    }
-
-    pub fn create_orbit(&mut self, orbit: OrbitName, world: &mut World) {
-        let id = world.create_orbit();
-        *self.orbit_mut(orbit) = Some(id);
-    }
-
-    pub fn assign_orbit(
-        &mut self,
-        name: PlanetName,
-        orbit: OrbitName,
-        world: &mut World
-    ) -> Result<(), ()> {
-        let name_id = self.planet_mut(name).ok_or(())?;
-        let orbit_id = self.orbit_mut(orbit).ok_or(())?;
-        world.planets[name_id].orbit = Some(orbit_id);
-        Ok(())
-    }
-
-    pub fn species_mut(&mut self, species: SpeciesName) -> &mut Option<usize> {
-        match species {
-            Vatrax => &mut self.vatrax,
-            Ralm => &mut self.ralm,
-            Protrak => &mut self.protrak,
-        }
-    }
-
-    pub fn create_species(&mut self, species: SpeciesName, world: &mut World) {
-        let id = world.create_species();
-        *self.species_mut(species) = Some(id);
-    }
-
-    pub fn assign_home_planet(
-        &mut self,
-        species: SpeciesName,
-        planet: PlanetName,
-        world: &mut World
-    ) -> Result<(), ()> {
-        let species_id = self.species_mut(species).ok_or(())?;
-        let planet_id = self.planet_mut(planet).ok_or(())?;
-        world.species[species_id].home_planet = Some(planet_id);
-        Ok(())
-    }
-
-    pub fn city_mut(&mut self, city: CityName) -> &mut Option<usize> {
-        match city {
-            Eldonar => &mut self.eldonar,
-            Tarat => &mut self.tarat,
-        }
-    }
-
-    pub fn create_city(&mut self, city: CityName, world: &mut World) {
-        let id = world.create_city();
-        *self.city_mut(city) = Some(id);
-    }
-
-    pub fn assign_location(
-        &mut self,
-        city: CityName,
-        planet: PlanetName,
-        location: LocationName,
-        world: &mut World
-    ) -> Result<(), ()> {
-        let city_id = self.city_mut(city).ok_or(())?;
-        let planet_id = self.planet_mut(planet).ok_or(())?;
-        let ref mut city = world.cities[city_id];
-        city.planet = Some(planet_id);
-        city.location = Some(location as u8);
-        world.planets[planet_id].cities[location as usize] = Some(city_id);
-        Ok(())
-    }
-
-    pub fn create_spaceport(
-        &mut self,
-        planet: PlanetName,
-        location: LocationName,
-        world: &mut World
-    ) -> Result<(), ()> {
-        let id = world.create_spaceport();
-        let planet_id = self.planet_mut(planet).ok_or(())?;
-        world.planets[planet_id].spaceports[location as usize] = Some(id);
-        Ok(())
-    }
-
-    pub fn destroy_spaceport(
-        &mut self,
-        planet: PlanetName,
-        location: LocationName,
-        world: &mut World
-    ) -> Result<(), ()> {
-        let planet_id = self.planet_mut(planet).ok_or(())?;
-        let spaceport_id = world.planets[planet_id].spaceports[location as usize].ok_or(())?;
-        world.spaceports[spaceport_id].destroyed = true;
-        Ok(())
-    }
-
-    pub fn rebuild_spaceport(
-        &mut self,
-        planet: PlanetName,
-        location: LocationName,
-        world: &mut World
-    ) -> Result<(), ()> {
-        let planet_id = self.planet_mut(planet).ok_or(())?;
-        let spaceport_id = world.planets[planet_id].spaceports[location as usize].ok_or(())?;
-        world.spaceports[spaceport_id].destroyed = false;
-        Ok(())
-    }
-
-    pub fn populate_city(
-        &mut self,
-        city: CityName,
-        n: u64,
-        species: SpeciesName,
-        world: &mut World
-    ) -> Result<(), ()> {
-        let city_id = self.city_mut(city).ok_or(())?;
-        let species_id = self.species_mut(species).ok_or(())?;
-        world.cities[city_id].population[species_id as usize] = n;
-        Ok(())
-    }
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+pub enum Hand {
+    Left,
+    Right,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
@@ -342,22 +163,34 @@ pub enum Expr {
     CreateCity(CityName),
     /// Create new spaceport.
     CreateSpaceport(PlanetName, LocationName),
+    /// Create new weapon.
+    CreateWeapon(WeaponName),
+    /// Create new player.
+    CreatePlayer(PlayerName),
     /// Assign an orbit to planet.
     AssignOrbit(PlanetName, OrbitName),
     /// Assign a home planet to species.
     AssignHomePlanet(SpeciesName, PlanetName),
     /// Assign a planet location to city.
     AssignLocation(CityName, PlanetName, LocationName),
+    /// Assign a weapon to player.
+    AssignWeapon(PlayerName, WeaponName, Hand),
     /// Destroy spaceport.
     DestroySpaceport(PlanetName, LocationName),
     /// Rebuild spaceport.
     RebuildSpaceport(PlanetName, LocationName),
     /// Populates city with a number of people.
     PopulateCity(CityName, u64, SpeciesName),
+    /// Drops player's weapon by hand.
+    DropWeapon(PlayerName, Hand),
     /// The story works out.
     Sound,
     /// The world contains planets.
     ContainsPlanets,
+    /// The world contains weapons.
+    ContainsWeapons,
+    /// The world contains players.
+    ContainsPlayers,
     /// The world contains a specific planet.
     ContainsPlanet(PlanetName),
     /// A planet contains a species.
@@ -378,6 +211,12 @@ pub enum Expr {
     HasSpaceTravel(PlanetName, bool),
     /// A planet has number of people.
     PlanetHasNumberOfPeople(PlanetName, u64),
+    /// A player carries a weapon.
+    HasWeapon(PlayerName, WeaponName),
+    /// Player's hand is empty.
+    HandEmpty(PlayerName, Hand),
+    /// Whether a player has any weapons.
+    HasWeapons(PlayerName, bool),
 }
 
 fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) -> Option<Expr> {
@@ -413,6 +252,14 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
             }
         }
 
+        if let CreateWeapon(name) = *expr {
+            state.create_weapon(name, world);
+        }
+
+        if let CreatePlayer(name) = *expr {
+            state.create_player(name, world);
+        }
+
         if let AssignOrbit(name, orbit) = *expr {
             if !state.assign_orbit(name, orbit, world).is_ok() {
                 return None;
@@ -427,6 +274,12 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 
         if let AssignLocation(city, planet, location) = *expr {
             if !state.assign_location(city, planet, location, world).is_ok() {
+                return None;
+            }
+        }
+
+        if let AssignWeapon(player, weapon, hand) = *expr {
+            if !state.assign_weapon(player, weapon, hand, world).is_ok() {
                 return None;
             }
         }
@@ -448,10 +301,26 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
                 return None;
             }
         }
+
+        if let DropWeapon(player, hand) = *expr {
+            if !state.drop_weapon(player, hand, world).is_ok() {
+                return None;
+            }
+        }
     }
 
     if world.planets.len() > 0 {
         let new_expr = ContainsPlanets;
+        if can_add(&new_expr) {return Some(new_expr)};
+    }
+
+    if world.weapons.len() > 0 {
+        let new_expr = ContainsWeapons;
+        if can_add(&new_expr) {return Some(new_expr)};
+    }
+
+    if world.players.len() > 0 {
+        let new_expr = ContainsPlayers;
         if can_add(&new_expr) {return Some(new_expr)};
     }
 
@@ -516,6 +385,42 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
         }
     }
 
+    for &player in PlayerName::all() {
+        if let Some(player_id) = *state.player_mut(player) {
+            if world.players[player_id].left_weapon.is_none() {
+                let new_expr = HandEmpty(player, Hand::Left);
+                if can_add(&new_expr) {return Some(new_expr)};
+            }
+            if world.players[player_id].right_weapon.is_none() {
+                let new_expr = HandEmpty(player, Hand::Right);
+                if can_add(&new_expr) {return Some(new_expr)};
+            }
+
+            for &weapon in WeaponName::all() {
+                if let Some(id) = *state.weapon_mut(weapon) {
+                    if let Some(weapon_id) = world.players[player_id].left_weapon {
+                        if id == weapon_id {
+                            let new_expr = HasWeapon(player, weapon);
+                            if can_add(&new_expr) {return Some(new_expr)};
+                        }
+                    }
+
+                    if let Some(weapon_id) = world.players[player_id].right_weapon {
+                        if id == weapon_id {
+                            let new_expr = HasWeapon(player, weapon);
+                            if can_add(&new_expr) {return Some(new_expr)};
+                        }
+                     }
+                }
+            }
+
+            let has_weapons = world.players[player_id].left_weapon.is_some() ||
+                              world.players[player_id].right_weapon.is_some();
+            let new_expr = HasWeapons(player, has_weapons);
+            if can_add(&new_expr) {return Some(new_expr)};
+        }
+    }
+
     // Common sense inference.
     for expr in story {
         if let ContainsSpecies(planet_a, a) = *expr {
@@ -547,16 +452,14 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
-            CreatePlanet(Tellar),
-            CreateSpecies(Vatrax),
-            AssignHomePlanet(Vatrax, Tellar),
-
-            CreateCity(Eldonar),
-            AssignLocation(Eldonar, Tellar, LocationName::A),
-            PopulateCity(Eldonar, 100_000, Vatrax),
+            CreateWeapon(XV43),
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            AssignWeapon(Alice, XV43, Hand::Right),
+            DropWeapon(Alice, Hand::Left),
         ],
         vec![
-            PlanetHasNumberOfPeople(Tellar, 100_000),
+            HasWeapons(Alice, true),
             Sound,
         ]
     )
@@ -579,6 +482,11 @@ fn main() {
             (test::has_no_space_travel_after_destroying_spaceport, true),
             (test::has_space_travel_after_rebuilding_spaceport, true),
             (test::sum_population_for_planet, true),
+            (test::create_weapon, true),
+            (test::assign_weapon, true),
+            (test::hand_is_empty_after_dropping_weapon, true),
+            (test::has_no_weapons_after_dropping_both_weapons, true),
+            (test::has_weapon_after_dropping_only_one_weapon, true),
         ]);
 
     let (start, goal) = test();
