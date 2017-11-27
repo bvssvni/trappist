@@ -65,6 +65,10 @@ pub enum Expr {
     DropWeapon(PlayerName, Hand),
     /// Kills player.
     Kill(PlayerName),
+    /// Set weapon firepower.
+    SetWeaponFirepower(WeaponName, u16),
+    /// Set canon firepower.
+    SetCanonFirepower(CanonName, u16),
     /// The story works out.
     Sound,
     /// The world contains planets.
@@ -235,6 +239,18 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
         if let Kill(player) = *expr {
             if !state.kill(player, world).is_ok() {
                 return None;
+            }
+        }
+
+        if let SetWeaponFirepower(weapon, firepower) = *expr {
+            if let Some(weapon_id) = *state.weapon_mut(weapon) {
+                world.weapons[weapon_id].firepower = firepower;
+            }
+        }
+
+        if let SetCanonFirepower(canon, firepower) = *expr {
+            if let Some(canon_id) = *state.canon_mut(canon) {
+                world.canons[canon_id].firepower = firepower;
             }
         }
     }
@@ -426,9 +442,8 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
-            CreateSpaceship(Folkum),
-            CreateCanon(SR6),
-            AssignCanon(Folkum, SR6, CanonSlot::Front1),
+            CreateWeapon(TT180),
+            SetWeaponFirepower(TT180, 100),
         ],
         vec![
             Sound,
@@ -470,6 +485,9 @@ fn main() {
             (test::number_of_weapon_users, true),
             (test::create_spaceship, true),
             (test::assign_canon, true),
+            (test::set_canon_firepower, true),
+            // 30
+            (test::set_weapon_firepower, true),
         ]);
 
     let (start, goal) = test();

@@ -51,7 +51,11 @@ pub struct Spaceport {
     pub destroyed: bool,
 }
 
-pub struct Weapon;
+pub const DEFAULT_WEAPON_FIREPOWER: u16 = 1000;
+
+pub struct Weapon {
+    pub firepower: u16,
+}
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Hand {
@@ -191,7 +195,11 @@ impl Spaceship {
     }
 }
 
-pub struct Canon;
+pub const DEFAULT_CANON_FIREPOWER: u16 = 1000;
+
+pub struct Canon {
+    pub firepower: u16,
+}
 
 pub struct World {
     pub planets: Vec<Planet>,
@@ -285,7 +293,9 @@ impl World {
     /// Creates a new weapon.
     pub fn create_weapon(&mut self) -> usize {
         let id = self.weapons.len();
-        self.weapons.push(Weapon);
+        self.weapons.push(Weapon {
+            firepower: DEFAULT_WEAPON_FIREPOWER,
+        });
         id
     }
 
@@ -328,7 +338,9 @@ impl World {
     /// Creates new canon.
     pub fn create_canon(&mut self) -> usize {
         let id = self.canons.len();
-        self.canons.push(Canon);
+        self.canons.push(Canon {
+            firepower: DEFAULT_CANON_FIREPOWER,
+        });
         id
     }
 

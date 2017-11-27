@@ -547,6 +547,32 @@ pub fn assign_canon() -> (Vec<Expr>, Vec<Expr>) {
     )
 }
 
+pub fn set_canon_firepower() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateSpaceship(Folkum),
+            CreateCanon(SR6),
+            SetCanonFirepower(SR6, 100),
+            AssignCanon(Folkum, SR6, CanonSlot::Front1),
+        ],
+        vec![
+            Sound,
+        ]
+    )
+}
+
+pub fn set_weapon_firepower() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(TT180),
+            SetWeaponFirepower(TT180, 100),
+        ],
+        vec![
+            Sound,
+        ]
+    )
+}
+
 /// Checks a list of tests.
 pub fn check(fs: &[(fn() -> (Vec<Expr>, Vec<Expr>), bool)]) {
     for (i, &(f, ok)) in fs.iter().enumerate() {
