@@ -10,6 +10,7 @@ use SpeciesName::*;
 use CityName::*;
 use WeaponName::*;
 use PlayerName::*;
+use SpaceshipName::*;
 use world::*;
 use state::*;
 use names::*;
@@ -35,6 +36,8 @@ pub enum Expr {
     CreateWeapon(WeaponName),
     /// Create new player.
     CreatePlayer(PlayerName),
+    /// Create new spaceship.
+    CreateSpaceship(SpaceshipName),
     /// Assign an orbit to planet.
     AssignOrbit(PlanetName, OrbitName),
     /// Assign a home planet to species.
@@ -148,6 +151,10 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 
         if let CreatePlayer(name) = *expr {
             state.create_player(name, world);
+        }
+
+        if let CreateSpaceship(name) = *expr {
+            state.create_spaceship(name, world);
         }
 
         if let AssignOrbit(name, orbit) = *expr {
@@ -404,19 +411,9 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
-            // Create some players and assign different weapons.
-            CreateWeapon(XV43),
-            CreateWeapon(TT180),
-            CreatePlayer(Alice),
-            AssignWeapon(Alice, XV43, Hand::Left),
-            CreatePlayer(Bob),
-            AssignWeapon(Bob, XV43, Hand::Right),
-            CreatePlayer(Carl),
-            AssignWeapon(Carl, TT180, Hand::Left),
+            CreateSpaceship(Folkum),
         ],
         vec![
-            NumberOfWeaponUsers(XV43, 2),
-            NumberOfWeaponUsers(TT180, 1),
             Sound,
         ]
     )
@@ -454,6 +451,7 @@ fn main() {
             (test::death_match_winner, true),
             (test::team_match_winner, true),
             (test::number_of_weapon_users, true),
+            (test::create_spaceship, true),
         ]);
 
     let (start, goal) = test();

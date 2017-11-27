@@ -139,3 +139,16 @@ pub enum Hand {
     Left,
     Right,
 }
+
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+pub enum SpaceshipName {
+    Folkum,
+}
+
+impl SpaceshipName {
+    pub fn all() -> &'static [SpaceshipName] {
+        &[
+            Folkum,
+        ]
+    }
+}

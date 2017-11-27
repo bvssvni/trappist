@@ -49,6 +49,8 @@ pub struct State {
     bob: Option<usize>,
     /// Reference to the Carl player.
     carl: Option<usize>,
+    /// Reference to the Folkum spaceship.
+    folkum: Option<usize>,
 }
 
 impl State {
@@ -78,6 +80,7 @@ impl State {
             alice: None,
             bob: None,
             carl: None,
+            folkum: None,
         }
     }
 
@@ -314,5 +317,20 @@ impl State {
         let player_id = self.player_mut(player).ok_or(())?;
         world.players[player_id].dead = true;
         Ok(())
+    }
+
+    pub fn spaceship_mut(&mut self, spaceship: SpaceshipName) -> &mut Option<usize> {
+        match spaceship {
+            Folkum => &mut self.folkum,
+        }
+    }
+
+    pub fn create_spaceship(
+        &mut self,
+        spaceship: SpaceshipName,
+        world: &mut World
+    ) {
+        let id = world.create_spaceship();
+        *self.spaceship_mut(spaceship) = Some(id);
     }
 }

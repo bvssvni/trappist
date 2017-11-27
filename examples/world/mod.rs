@@ -91,6 +91,8 @@ impl Player {
     }
 }
 
+pub struct Spaceship;
+
 pub struct World {
     pub planets: Vec<Planet>,
     pub orbits: Vec<Orbit>,
@@ -99,6 +101,7 @@ pub struct World {
     pub spaceports: Vec<Spaceport>,
     pub weapons: Vec<Weapon>,
     pub players: Vec<Player>,
+    pub spaceships: Vec<Spaceship>,
 }
 
 impl World {
@@ -111,6 +114,7 @@ impl World {
             spaceports: vec![],
             weapons: vec![],
             players: vec![],
+            spaceships: vec![],
         }
     }
 
@@ -192,6 +196,13 @@ impl World {
             species: None,
             dead: false,
         });
+        id
+    }
+
+    /// Creates a new spaceship.
+    pub fn create_spaceship(&mut self) -> usize {
+        let id = self.spaceships.len();
+        self.spaceships.push(Spaceship);
         id
     }
 
