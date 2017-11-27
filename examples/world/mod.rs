@@ -53,6 +53,12 @@ pub struct Spaceport {
 
 pub struct Weapon;
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+pub enum Hand {
+    Left,
+    Right,
+}
+
 pub struct Player {
     pub left_weapon: Option<usize>,
     pub right_weapon: Option<usize>,
@@ -61,6 +67,13 @@ pub struct Player {
 }
 
 impl Player {
+    pub fn weapon_mut(&mut self, hand: Hand) -> &mut Option<usize> {
+        match hand {
+            Hand::Left => &mut self.left_weapon,
+            Hand::Right => &mut self.right_weapon,
+        }
+    }
+
     pub fn has_weapons(&self) -> bool {
         self.left_weapon.is_some() ||
         self.right_weapon.is_some()
@@ -91,7 +104,94 @@ impl Player {
     }
 }
 
-pub struct Spaceship;
+/// A canon slot refers to a canon location on a spaceship.
+/// Numbered slots are named from left to right, or front to back.
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+pub enum CanonSlot {
+    Front1,
+    Front2,
+    LeftSide1,
+    LeftSide2,
+    LeftSide3,
+    LeftSide4,
+    RightSide1,
+    RightSide2,
+    RightSide3,
+    RightSide4,
+    Back1,
+    Back2,
+    TopFront,
+    TopBack,
+    BottomFront,
+    BottomBack,
+}
+
+impl CanonSlot {
+    pub fn all() -> &'static [CanonSlot] {
+        &[
+            CanonSlot::Front1,
+            CanonSlot::Front2,
+            CanonSlot::LeftSide1,
+            CanonSlot::LeftSide2,
+            CanonSlot::LeftSide3,
+            CanonSlot::LeftSide4,
+            CanonSlot::RightSide1,
+            CanonSlot::RightSide2,
+            CanonSlot::RightSide3,
+            CanonSlot::RightSide4,
+            CanonSlot::Back1,
+            CanonSlot::Back2,
+            CanonSlot::TopFront,
+            CanonSlot::TopBack,
+            CanonSlot::BottomFront,
+            CanonSlot::BottomBack,
+        ]
+    }
+}
+
+pub struct Spaceship {
+    canon_front_1: Option<usize>,
+    canon_front_2: Option<usize>,
+    canon_left_side_1: Option<usize>,
+    canon_left_side_2: Option<usize>,
+    canon_left_side_3: Option<usize>,
+    canon_left_side_4: Option<usize>,
+    canon_right_side_1: Option<usize>,
+    canon_right_side_2: Option<usize>,
+    canon_right_side_3: Option<usize>,
+    canon_right_side_4: Option<usize>,
+    canon_back_1: Option<usize>,
+    canon_back_2: Option<usize>,
+    canon_top_front: Option<usize>,
+    canon_top_back: Option<usize>,
+    canon_bottom_front: Option<usize>,
+    canon_bottom_back: Option<usize>,
+}
+
+impl Spaceship {
+    pub fn canon_mut(&mut self, canon_slot: CanonSlot) -> &mut Option<usize> {
+        match canon_slot {
+            CanonSlot::Front1 => &mut self.canon_front_1,
+            CanonSlot::Front2 => &mut self.canon_front_2,
+            CanonSlot::LeftSide1 => &mut self.canon_left_side_1,
+            CanonSlot::LeftSide2 => &mut self.canon_left_side_2,
+            CanonSlot::LeftSide3 => &mut self.canon_left_side_3,
+            CanonSlot::LeftSide4 => &mut self.canon_left_side_4,
+            CanonSlot::RightSide1 => &mut self.canon_right_side_1,
+            CanonSlot::RightSide2 => &mut self.canon_right_side_2,
+            CanonSlot::RightSide3 => &mut self.canon_right_side_3,
+            CanonSlot::RightSide4 => &mut self.canon_right_side_4,
+            CanonSlot::Back1 => &mut self.canon_back_1,
+            CanonSlot::Back2 => &mut self.canon_back_2,
+            CanonSlot::TopFront => &mut self.canon_top_front,
+            CanonSlot::TopBack => &mut self.canon_top_back,
+            CanonSlot::BottomFront => &mut self.canon_bottom_front,
+            CanonSlot::BottomBack => &mut self.canon_bottom_back,
+        }
+    }
+}
+
+pub struct Canon;
 
 pub struct World {
     pub planets: Vec<Planet>,
@@ -102,6 +202,7 @@ pub struct World {
     pub weapons: Vec<Weapon>,
     pub players: Vec<Player>,
     pub spaceships: Vec<Spaceship>,
+    pub canons: Vec<Canon>,
 }
 
 impl World {
@@ -115,6 +216,7 @@ impl World {
             weapons: vec![],
             players: vec![],
             spaceships: vec![],
+            canons: vec![],
         }
     }
 
@@ -202,7 +304,31 @@ impl World {
     /// Creates a new spaceship.
     pub fn create_spaceship(&mut self) -> usize {
         let id = self.spaceships.len();
-        self.spaceships.push(Spaceship);
+        self.spaceships.push(Spaceship {
+            canon_front_1: None,
+            canon_front_2: None,
+            canon_left_side_1: None,
+            canon_left_side_2: None,
+            canon_left_side_3: None,
+            canon_left_side_4: None,
+            canon_right_side_1: None,
+            canon_right_side_2: None,
+            canon_right_side_3: None,
+            canon_right_side_4: None,
+            canon_back_1: None,
+            canon_back_2: None,
+            canon_top_front: None,
+            canon_top_back: None,
+            canon_bottom_front: None,
+            canon_bottom_back: None,
+        });
+        id
+    }
+
+    /// Creates new canon.
+    pub fn create_canon(&mut self) -> usize {
+        let id = self.canons.len();
+        self.canons.push(Canon);
         id
     }
 

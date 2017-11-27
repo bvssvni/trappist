@@ -51,6 +51,8 @@ pub struct State {
     carl: Option<usize>,
     /// Reference to the Folkum spaceship.
     folkum: Option<usize>,
+    /// Reference to the SR6 canon.
+    sr6: Option<usize>,
 }
 
 impl State {
@@ -81,6 +83,7 @@ impl State {
             bob: None,
             carl: None,
             folkum: None,
+            sr6: None,
         }
     }
 
@@ -266,10 +269,7 @@ impl State {
     ) -> Result<(), ()> {
         let player_id = self.player_mut(player).ok_or(())?;
         let weapon_id = self.weapon_mut(weapon).ok_or(())?;
-        match hand {
-            Hand::Left => world.players[player_id].left_weapon = Some(weapon_id),
-            Hand::Right => world.players[player_id].right_weapon = Some(weapon_id),
-        }
+        *world.players[player_id].weapon_mut(hand) = Some(weapon_id);
         Ok(())
     }
 
@@ -332,5 +332,33 @@ impl State {
     ) {
         let id = world.create_spaceship();
         *self.spaceship_mut(spaceship) = Some(id);
+    }
+
+    pub fn canon_mut(&mut self, canon: CanonName) -> &mut Option<usize> {
+        match canon {
+            SR6 => &mut self.sr6,
+        }
+    }
+
+    pub fn create_canon(
+        &mut self,
+        canon: CanonName,
+        world: &mut World
+    ) {
+        let id = world.create_canon();
+        *self.canon_mut(canon) = Some(id);
+    }
+
+    pub fn assign_canon(
+        &mut self,
+        spaceship: SpaceshipName,
+        canon: CanonName,
+        canon_slot: CanonSlot,
+        world: &mut World
+    ) -> Result<(), ()> {
+        let spaceship_id = self.spaceship_mut(spaceship).ok_or(())?;
+        let canon_id = self.canon_mut(canon).ok_or(())?;
+        *world.spaceships[spaceship_id].canon_mut(canon_slot) = Some(canon_id);
+        Ok(())
     }
 }

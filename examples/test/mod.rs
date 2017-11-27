@@ -534,6 +534,19 @@ pub fn create_spaceship() -> (Vec<Expr>, Vec<Expr>) {
     )
 }
 
+pub fn assign_canon() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateSpaceship(Folkum),
+            CreateCanon(SR6),
+            AssignCanon(Folkum, SR6, CanonSlot::Front1),
+        ],
+        vec![
+            Sound,
+        ]
+    )
+}
+
 /// Checks a list of tests.
 pub fn check(fs: &[(fn() -> (Vec<Expr>, Vec<Expr>), bool)]) {
     for (i, &(f, ok)) in fs.iter().enumerate() {

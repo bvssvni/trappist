@@ -11,6 +11,7 @@ use CityName::*;
 use WeaponName::*;
 use PlayerName::*;
 use SpaceshipName::*;
+use CanonName::*;
 use world::*;
 use state::*;
 use names::*;
@@ -38,6 +39,8 @@ pub enum Expr {
     CreatePlayer(PlayerName),
     /// Create new spaceship.
     CreateSpaceship(SpaceshipName),
+    /// Creates new canon.
+    CreateCanon(CanonName),
     /// Assign an orbit to planet.
     AssignOrbit(PlanetName, OrbitName),
     /// Assign a home planet to species.
@@ -48,6 +51,8 @@ pub enum Expr {
     AssignWeapon(PlayerName, WeaponName, Hand),
     /// Assign species to player.
     AssignSpecies(PlayerName, SpeciesName),
+    /// Assign a canon to spaceship.
+    AssignCanon(SpaceshipName, CanonName, CanonSlot),
     /// Destroy spaceport.
     DestroySpaceport(PlanetName, LocationName),
     /// Destroy planet.
@@ -157,6 +162,10 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
             state.create_spaceship(name, world);
         }
 
+        if let CreateCanon(name) = *expr {
+            state.create_canon(name, world);
+        }
+
         if let AssignOrbit(name, orbit) = *expr {
             if !state.assign_orbit(name, orbit, world).is_ok() {
                 return None;
@@ -177,6 +186,12 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 
         if let AssignWeapon(player, weapon, hand) = *expr {
             if !state.assign_weapon(player, weapon, hand, world).is_ok() {
+                return None;
+            }
+        }
+
+        if let AssignCanon(spaceship, canon, canon_slot) = *expr {
+            if !state.assign_canon(spaceship, canon, canon_slot, world).is_ok() {
                 return None;
             }
         }
@@ -412,6 +427,8 @@ pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
             CreateSpaceship(Folkum),
+            CreateCanon(SR6),
+            AssignCanon(Folkum, SR6, CanonSlot::Front1),
         ],
         vec![
             Sound,
@@ -452,6 +469,7 @@ fn main() {
             (test::team_match_winner, true),
             (test::number_of_weapon_users, true),
             (test::create_spaceship, true),
+            (test::assign_canon, true),
         ]);
 
     let (start, goal) = test();

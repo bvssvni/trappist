@@ -102,6 +102,7 @@ impl LocationName {
     }
 }
 
+/// Carried weapon.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum WeaponName {
     XV43,
@@ -135,12 +136,6 @@ impl PlayerName {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub enum Hand {
-    Left,
-    Right,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum SpaceshipName {
     Folkum,
 }
@@ -149,6 +144,19 @@ impl SpaceshipName {
     pub fn all() -> &'static [SpaceshipName] {
         &[
             Folkum,
+        ]
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+pub enum CanonName {
+    SR6,
+}
+
+impl CanonName {
+    pub fn all() -> &'static [CanonName] {
+        &[
+            SR6,
         ]
     }
 }
