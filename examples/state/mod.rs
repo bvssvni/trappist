@@ -41,6 +41,8 @@ pub struct State {
     tarat: Option<usize>,
     /// Reference to the XV43 weapon.
     xv43: Option<usize>,
+    /// Reference to the TT180 weapon.
+    tt180: Option<usize>,
     /// Reference to the Alice player.
     alice: Option<usize>,
     /// Reference to the Bob player.
@@ -72,6 +74,7 @@ impl State {
             eldonar: None,
             tarat: None,
             xv43: None,
+            tt180: None,
             alice: None,
             bob: None,
             carl: None,
@@ -229,6 +232,7 @@ impl State {
     pub fn weapon_mut(&mut self, weapon: WeaponName) -> &mut Option<usize> {
         match weapon {
             XV43 => &mut self.xv43,
+            TT180 => &mut self.tt180,
         }
     }
 

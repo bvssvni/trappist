@@ -105,6 +105,8 @@ pub enum Expr {
     DeathMatchWinner(PlayerName),
     /// Which species won death match.
     TeamMatchWinner(SpeciesName),
+    /// The number of users per weapon.
+    NumberOfWeaponUsers(WeaponName, usize),
 }
 
 fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) -> Option<Expr> {
@@ -358,6 +360,13 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
         }
     }
 
+    for &weapon in WeaponName::all() {
+        if let Some(weapon_id) = *state.weapon_mut(weapon) {
+            let new_expr = NumberOfWeaponUsers(weapon, world.number_of_weapon_users(weapon_id));
+            if can_add(&new_expr) {return Some(new_expr)};
+        }
+    }
+
     let new_expr = AllPlayersHaveSpecies(world.all_players_have_species());
     if can_add(&new_expr) {return Some(new_expr)};
 
@@ -395,36 +404,19 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
-            // Create two planets with two species.
-            CreatePlanet(Tellar),
-            CreatePlanet(Munos),
-            CreateSpecies(Vatrax),
-            CreateSpecies(Ralm),
-            AssignHomePlanet(Vatrax, Tellar),
-            AssignHomePlanet(Ralm, Munos),
-
-            // Create three players on two teams.
+            // Create some players and assign different weapons.
             CreateWeapon(XV43),
+            CreateWeapon(TT180),
             CreatePlayer(Alice),
-            AssignSpecies(Alice, Vatrax),
             AssignWeapon(Alice, XV43, Hand::Left),
             CreatePlayer(Bob),
-            AssignSpecies(Bob, Ralm),
             AssignWeapon(Bob, XV43, Hand::Right),
             CreatePlayer(Carl),
-            AssignSpecies(Carl, Ralm),
-            AssignWeapon(Carl, XV43, Hand::Left),
-
-            // Alice's spawning planet gets destroyed and then she gets killed.
-            DestroyPlanet(Tellar),
-            Kill(Alice),
+            AssignWeapon(Carl, TT180, Hand::Left),
         ],
         vec![
-            OutOfGame(Alice, true),
-            OutOfGame(Bob, false),
-            OutOfGame(Carl, false),
-            NumberOfPlayersLeft(2),
-            TeamMatchWinner(Ralm),
+            NumberOfWeaponUsers(XV43, 2),
+            NumberOfWeaponUsers(TT180, 1),
             Sound,
         ]
     )
@@ -461,6 +453,7 @@ fn main() {
             (test::not_out_of_game_when_just_killed, true),
             (test::death_match_winner, true),
             (test::team_match_winner, true),
+            (test::number_of_weapon_users, true),
         ]);
 
     let (start, goal) = test();

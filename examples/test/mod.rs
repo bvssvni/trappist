@@ -502,6 +502,27 @@ pub fn team_match_winner() -> (Vec<Expr>, Vec<Expr>) {
     )
 }
 
+pub fn number_of_weapon_users() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            // Create some players and assign different weapons.
+            CreateWeapon(XV43),
+            CreateWeapon(TT180),
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            AssignWeapon(Bob, XV43, Hand::Right),
+            CreatePlayer(Carl),
+            AssignWeapon(Carl, TT180, Hand::Left),
+        ],
+        vec![
+            NumberOfWeaponUsers(XV43, 2),
+            NumberOfWeaponUsers(TT180, 1),
+            Sound,
+        ]
+    )
+}
+
 /// Checks a list of tests.
 pub fn check(fs: &[(fn() -> (Vec<Expr>, Vec<Expr>), bool)]) {
     for (i, &(f, ok)) in fs.iter().enumerate() {

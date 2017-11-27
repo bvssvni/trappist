@@ -105,12 +105,14 @@ impl LocationName {
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum WeaponName {
     XV43,
+    TT180,
 }
 
 impl WeaponName {
     pub fn all() -> &'static [WeaponName] {
         &[
             XV43,
+            TT180,
         ]
     }
 }

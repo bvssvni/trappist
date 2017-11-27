@@ -246,4 +246,17 @@ impl World {
         }
         species
     }
+
+    /// Returns the number of weapon users.
+    pub fn number_of_weapon_users(&self, weapon_id: usize) -> usize {
+        let mut sum = 0;
+        for player in &self.players {
+            if player.left_weapon == Some(weapon_id) ||
+               player.right_weapon == Some(weapon_id)
+            {
+                sum += 1;
+            }
+        }
+        sum
+    }
 }
