@@ -573,6 +573,25 @@ pub fn set_weapon_firepower() -> (Vec<Expr>, Vec<Expr>) {
     )
 }
 
+pub fn destroy_planet_with_planet_destroyer_weapon() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(AM0),
+            SetWeaponFirepower(AM0, 10000),
+            SetWeaponPlanetDestroyer(AM0, true),
+
+            CreatePlanet(Tellar),
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, AM0, Hand::Left),
+            ShootAtPlanet(Alice, Hand::Left, Tellar),
+        ],
+        vec![
+            IsPlanetDestroyed(Tellar, true),
+            Sound,
+        ]
+    )
+}
+
 /// Checks a list of tests.
 pub fn check(fs: &[(fn() -> (Vec<Expr>, Vec<Expr>), bool)]) {
     for (i, &(f, ok)) in fs.iter().enumerate() {

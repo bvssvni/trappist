@@ -55,6 +55,7 @@ pub const DEFAULT_WEAPON_FIREPOWER: u16 = 1000;
 
 pub struct Weapon {
     pub firepower: u16,
+    pub planet_destroyer: bool,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
@@ -295,6 +296,7 @@ impl World {
         let id = self.weapons.len();
         self.weapons.push(Weapon {
             firepower: DEFAULT_WEAPON_FIREPOWER,
+            planet_destroyer: false,
         });
         id
     }

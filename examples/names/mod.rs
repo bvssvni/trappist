@@ -107,6 +107,8 @@ impl LocationName {
 pub enum WeaponName {
     XV43,
     TT180,
+    /// Typically anti-matter weapon capable of destroying an entire planet.
+    AM0,
 }
 
 impl WeaponName {
@@ -114,6 +116,7 @@ impl WeaponName {
         &[
             XV43,
             TT180,
+            AM0,
         ]
     }
 }

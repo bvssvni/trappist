@@ -57,6 +57,8 @@ pub enum Expr {
     DestroySpaceport(PlanetName, LocationName),
     /// Destroy planet.
     DestroyPlanet(PlanetName),
+    /// Player shoots at planet.
+    ShootAtPlanet(PlayerName, Hand, PlanetName),
     /// Rebuild spaceport.
     RebuildSpaceport(PlanetName, LocationName),
     /// Populates city with a number of people.
@@ -67,6 +69,8 @@ pub enum Expr {
     Kill(PlayerName),
     /// Set weapon firepower.
     SetWeaponFirepower(WeaponName, u16),
+    /// Set weapon to be planet destroyer.
+    SetWeaponPlanetDestroyer(WeaponName, bool),
     /// Set canon firepower.
     SetCanonFirepower(CanonName, u16),
     /// The story works out.
@@ -119,6 +123,8 @@ pub enum Expr {
     TeamMatchWinner(SpeciesName),
     /// The number of users per weapon.
     NumberOfWeaponUsers(WeaponName, usize),
+    /// Whether planet is destroyed.
+    IsPlanetDestroyed(PlanetName, bool),
 }
 
 fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) -> Option<Expr> {
@@ -248,9 +254,26 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
             }
         }
 
+        if let SetWeaponPlanetDestroyer(weapon, value) = *expr {
+            if let Some(weapon_id) = *state.weapon_mut(weapon) {
+                world.weapons[weapon_id].planet_destroyer = value;
+            }
+        }
+
         if let SetCanonFirepower(canon, firepower) = *expr {
             if let Some(canon_id) = *state.canon_mut(canon) {
                 world.canons[canon_id].firepower = firepower;
+            }
+        }
+
+        if let ShootAtPlanet(player, hand, planet) = *expr {
+            if let Some(player_id) = *state.player_mut(player) {
+                if let Some(weapon_id) = *world.players[player_id].weapon_mut(hand) {
+                    if world.weapons[weapon_id].planet_destroyer {
+                        let new_expr = DestroyPlanet(planet);
+                        if can_add(&new_expr) {return Some(new_expr)};
+                    }
+                }
             }
         }
     }
@@ -299,6 +322,9 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 
             let population = world.planets[planet_id].population(world);
             let new_expr = PlanetHasNumberOfPeople(name, population);
+            if can_add(&new_expr) {return Some(new_expr)};
+
+            let new_expr = IsPlanetDestroyed(name, world.planets[planet_id].destroyed);
             if can_add(&new_expr) {return Some(new_expr)};
         }
     }
@@ -442,10 +468,17 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
-            CreateWeapon(TT180),
-            SetWeaponFirepower(TT180, 100),
+            CreateWeapon(AM0),
+            SetWeaponFirepower(AM0, 10000),
+            SetWeaponPlanetDestroyer(AM0, true),
+
+            CreatePlanet(Tellar),
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, AM0, Hand::Left),
+            ShootAtPlanet(Alice, Hand::Left, Tellar),
         ],
         vec![
+            IsPlanetDestroyed(Tellar, true),
             Sound,
         ]
     )
@@ -488,6 +521,7 @@ fn main() {
             (test::set_canon_firepower, true),
             // 30
             (test::set_weapon_firepower, true),
+            (test::destroy_planet_with_planet_destroyer_weapon, true),
         ]);
 
     let (start, goal) = test();
