@@ -764,6 +764,34 @@ pub fn can_shoot_when_weapon_is_recharged() -> (Vec<Expr>, Vec<Expr>) {
     )
 }
 
+pub fn recharge_milliseconds_all_weapons() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+            SetWeaponFirepower(XV43, 100),
+            // Wait 1 second between each shot.
+            SetWeaponRechargeMilliseconds(XV43, 1000),
+
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            AssignWeapon(Bob, XV43, Hand::Right),
+
+            ShootAtPlayer(Alice, Hand::Left, Bob),
+            RechargeMillisecondsAllWeapons(200),
+            ShootAtPlayer(Bob, Hand::Right, Alice),
+            RechargeMillisecondsAllWeapons(800),
+        ],
+        vec![
+            MillisecondsToRecharge(Alice, Hand::Left, 0),
+            MillisecondsToRecharge(Bob, Hand::Right, 200),
+            CanShoot(Alice, Hand::Left, true),
+            CanShoot(Bob, Hand::Right, false),
+            Sound,
+        ]
+    )
+}
+
 /// Checks a list of tests.
 pub fn check(fs: &[(fn() -> (Vec<Expr>, Vec<Expr>), bool)]) {
     for (i, &(f, ok)) in fs.iter().enumerate() {

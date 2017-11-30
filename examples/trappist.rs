@@ -73,6 +73,8 @@ pub enum Expr {
     Kill(PlayerName),
     /// Recharges weapon with an amount of milliseconds.
     RechargeMilliseconds(PlayerName, Hand, u16),
+    /// Recharges all weapons with an amount of milliseconds.
+    RechargeMillisecondsAllWeapons(u16),
     /// Set player life.
     SetLife(PlayerName, u16),
     /// Set weapon firepower.
@@ -323,6 +325,10 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
                 world.recharge_milliseconds(player_id, hand, recharge_milliseconds);
             }
         }
+
+        if let RechargeMillisecondsAllWeapons(recharge_milliseconds) = *expr {
+            world.recharge_milliseconds_all_weapons(recharge_milliseconds);
+        }
     }
 
     if world.planets.len() > 0 {
@@ -536,18 +542,25 @@ pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
             CreateWeapon(XV43),
+            SetWeaponFirepower(XV43, 100),
             // Wait 1 second between each shot.
             SetWeaponRechargeMilliseconds(XV43, 1000),
 
             CreatePlayer(Alice),
             AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            AssignWeapon(Bob, XV43, Hand::Right),
 
-            ShootAtNothing(Alice, Hand::Left),
-            RechargeMilliseconds(Alice, Hand::Left, 1000),
+            ShootAtPlayer(Alice, Hand::Left, Bob),
+            RechargeMillisecondsAllWeapons(200),
+            ShootAtPlayer(Bob, Hand::Right, Alice),
+            RechargeMillisecondsAllWeapons(800),
         ],
         vec![
             MillisecondsToRecharge(Alice, Hand::Left, 0),
+            MillisecondsToRecharge(Bob, Hand::Right, 200),
             CanShoot(Alice, Hand::Left, true),
+            CanShoot(Bob, Hand::Right, false),
             Sound,
         ]
     )
@@ -600,6 +613,7 @@ fn main() {
             (test::cannot_shoot_while_weapon_is_recharging, true),
             (test::can_shoot_when_weapon_is_recharged, true),
             // 40
+            (test::recharge_milliseconds_all_weapons, true),
         ]);
 
     let (start, goal) = test();

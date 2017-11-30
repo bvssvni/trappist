@@ -498,4 +498,23 @@ impl World {
             *ms -= recharge_milliseconds;
         }
     }
+
+    /// Recharges all weapons with an amount of milliseconds.
+    pub fn recharge_milliseconds_all_weapons(
+        &mut self,
+        recharge_milliseconds: u16
+    ) {
+        for player in &mut self.players {
+            if recharge_milliseconds > player.left_recharge_milliseconds {
+                player.left_recharge_milliseconds = 0;
+            } else {
+                player.left_recharge_milliseconds -= recharge_milliseconds;
+            }
+            if recharge_milliseconds > player.right_recharge_milliseconds {
+                player.right_recharge_milliseconds = 0;
+            } else {
+                player.right_recharge_milliseconds -= recharge_milliseconds;
+            }
+        }
+    }
 }
