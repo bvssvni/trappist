@@ -483,4 +483,19 @@ impl World {
             *self.players[player_id].recharge_milliseconds_mut(hand) = recharge_milliseconds;
         }
     }
+
+    /// Recharges weapon with an amount of milliseconds.
+    pub fn recharge_milliseconds(
+        &mut self,
+        player_id: usize,
+        hand: Hand,
+        recharge_milliseconds: u16
+    ) {
+        let ms = self.players[player_id].recharge_milliseconds_mut(hand);
+        if recharge_milliseconds > *ms {
+            *ms = 0;
+        } else {
+            *ms -= recharge_milliseconds;
+        }
+    }
 }

@@ -723,6 +723,47 @@ pub fn recharge_when_shooting_at_planet_even_weapon_is_not_planet_destroyer()
     )
 }
 
+pub fn cannot_shoot_while_weapon_is_recharging() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+            // Wait 1 second between each shot.
+            SetWeaponRechargeMilliseconds(XV43, 1000),
+
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+
+            ShootAtNothing(Alice, Hand::Left),
+        ],
+        vec![
+            MillisecondsToRecharge(Alice, Hand::Left, 1000),
+            CanShoot(Alice, Hand::Left, false),
+            Sound,
+        ]
+    )
+}
+
+pub fn can_shoot_when_weapon_is_recharged() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+            // Wait 1 second between each shot.
+            SetWeaponRechargeMilliseconds(XV43, 1000),
+
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+
+            ShootAtNothing(Alice, Hand::Left),
+            RechargeMilliseconds(Alice, Hand::Left, 1000),
+        ],
+        vec![
+            MillisecondsToRecharge(Alice, Hand::Left, 0),
+            CanShoot(Alice, Hand::Left, true),
+            Sound,
+        ]
+    )
+}
+
 /// Checks a list of tests.
 pub fn check(fs: &[(fn() -> (Vec<Expr>, Vec<Expr>), bool)]) {
     for (i, &(f, ok)) in fs.iter().enumerate() {

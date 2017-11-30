@@ -71,6 +71,8 @@ pub enum Expr {
     ShootAtNothing(PlayerName, Hand),
     /// Kills player.
     Kill(PlayerName),
+    /// Recharges weapon with an amount of milliseconds.
+    RechargeMilliseconds(PlayerName, Hand, u16),
     /// Set player life.
     SetLife(PlayerName, u16),
     /// Set weapon firepower.
@@ -139,6 +141,8 @@ pub enum Expr {
     HasLife(PlayerName, u16),
     /// How long time it takes for hand weapon to recharge.
     MillisecondsToRecharge(PlayerName, Hand, u16),
+    /// Whether player can shoot with weapon.
+    CanShoot(PlayerName, Hand, bool),
 }
 
 fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) -> Option<Expr> {
@@ -313,6 +317,12 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
                 world.shoot_at_nothing(player_id, hand);
             }
         }
+
+        if let RechargeMilliseconds(player, hand, recharge_milliseconds) = *expr {
+            if let Some(player_id) = *state.player_mut(player) {
+                world.recharge_milliseconds(player_id, hand, recharge_milliseconds);
+            }
+        }
     }
 
     if world.planets.len() > 0 {
@@ -469,8 +479,14 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
             let new_expr = MillisecondsToRecharge(player, Hand::Left, left_recharge_ms);
             if can_add(&new_expr) {return Some(new_expr)};
 
+            let new_expr = CanShoot(player, Hand::Left, left_recharge_ms == 0);
+            if can_add(&new_expr) {return Some(new_expr)};
+
             let right_recharge_ms = world.players[player_id].right_recharge_milliseconds;
             let new_expr = MillisecondsToRecharge(player, Hand::Right, right_recharge_ms);
+            if can_add(&new_expr) {return Some(new_expr)};
+
+            let new_expr = CanShoot(player, Hand::Right, right_recharge_ms == 0);
             if can_add(&new_expr) {return Some(new_expr)};
         }
     }
@@ -519,20 +535,19 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
-            CreatePlanet(Tellar),
-
             CreateWeapon(XV43),
-            SetWeaponPlanetDestroyer(XV43, false),
             // Wait 1 second between each shot.
             SetWeaponRechargeMilliseconds(XV43, 1000),
 
             CreatePlayer(Alice),
             AssignWeapon(Alice, XV43, Hand::Left),
 
-            ShootAtPlanet(Alice, Hand::Left, Tellar),
+            ShootAtNothing(Alice, Hand::Left),
+            RechargeMilliseconds(Alice, Hand::Left, 1000),
         ],
         vec![
-            MillisecondsToRecharge(Alice, Hand::Left, 1000),
+            MillisecondsToRecharge(Alice, Hand::Left, 0),
+            CanShoot(Alice, Hand::Left, true),
             Sound,
         ]
     )
@@ -582,6 +597,9 @@ fn main() {
             (test::recharge_when_shooting_at_player, true),
             (test::recharge_when_shooting_at_planet, true),
             (test::recharge_when_shooting_at_planet_even_weapon_is_not_planet_destroyer, true),
+            (test::cannot_shoot_while_weapon_is_recharging, true),
+            (test::can_shoot_when_weapon_is_recharged, true),
+            // 40
         ]);
 
     let (start, goal) = test();
