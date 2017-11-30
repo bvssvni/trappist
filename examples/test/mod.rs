@@ -636,6 +636,93 @@ pub fn shoot_player_dead() -> (Vec<Expr>, Vec<Expr>) {
     )
 }
 
+pub fn recharge_when_shooting_at_nothing() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+            SetWeaponFirepower(XV43, 100),
+            // Wait 1 second between each shot.
+            SetWeaponRechargeMilliseconds(XV43, 1000),
+
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+
+            ShootAtNothing(Alice, Hand::Left),
+        ],
+        vec![
+            MillisecondsToRecharge(Alice, Hand::Left, 1000),
+            Sound,
+        ]
+    )
+}
+
+pub fn recharge_when_shooting_at_player() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+            SetWeaponFirepower(XV43, 100),
+            // Wait 1 second between each shot.
+            SetWeaponRechargeMilliseconds(XV43, 1000),
+
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            SetLife(Bob, 1000),
+
+            ShootAtPlayer(Alice, Hand::Left, Bob),
+        ],
+        vec![
+            MillisecondsToRecharge(Alice, Hand::Left, 1000),
+            Sound,
+        ]
+    )
+}
+
+pub fn recharge_when_shooting_at_planet() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreatePlanet(Tellar),
+
+            CreateWeapon(XV43),
+            SetWeaponPlanetDestroyer(XV43, true),
+            // Wait 1 second between each shot.
+            SetWeaponRechargeMilliseconds(XV43, 1000),
+
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+
+            ShootAtPlanet(Alice, Hand::Left, Tellar),
+        ],
+        vec![
+            MillisecondsToRecharge(Alice, Hand::Left, 1000),
+            Sound,
+        ]
+    )
+}
+
+pub fn recharge_when_shooting_at_planet_even_weapon_is_not_planet_destroyer()
+-> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreatePlanet(Tellar),
+
+            CreateWeapon(XV43),
+            SetWeaponPlanetDestroyer(XV43, false),
+            // Wait 1 second between each shot.
+            SetWeaponRechargeMilliseconds(XV43, 1000),
+
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+
+            ShootAtPlanet(Alice, Hand::Left, Tellar),
+        ],
+        vec![
+            MillisecondsToRecharge(Alice, Hand::Left, 1000),
+            Sound,
+        ]
+    )
+}
+
 /// Checks a list of tests.
 pub fn check(fs: &[(fn() -> (Vec<Expr>, Vec<Expr>), bool)]) {
     for (i, &(f, ok)) in fs.iter().enumerate() {

@@ -57,22 +57,26 @@ pub enum Expr {
     DestroySpaceport(PlanetName, LocationName),
     /// Destroy planet.
     DestroyPlanet(PlanetName),
-    /// Player shoots at planet.
-    ShootAtPlanet(PlayerName, Hand, PlanetName),
     /// Rebuild spaceport.
     RebuildSpaceport(PlanetName, LocationName),
     /// Populates city with a number of people.
     PopulateCity(CityName, u64, SpeciesName),
     /// Drops player's weapon by hand.
     DropWeapon(PlayerName, Hand),
+    /// Player shoots at planet.
+    ShootAtPlanet(PlayerName, Hand, PlanetName),
     /// Shoot at another player.
     ShootAtPlayer(PlayerName, Hand, PlayerName),
+    /// Shoot at nothing.
+    ShootAtNothing(PlayerName, Hand),
     /// Kills player.
     Kill(PlayerName),
     /// Set player life.
     SetLife(PlayerName, u16),
     /// Set weapon firepower.
     SetWeaponFirepower(WeaponName, u16),
+    /// Set weapon recharge in milliseconds.
+    SetWeaponRechargeMilliseconds(WeaponName, u16),
     /// Set weapon to be planet destroyer.
     SetWeaponPlanetDestroyer(WeaponName, bool),
     /// Set canon firepower.
@@ -133,6 +137,8 @@ pub enum Expr {
     IsDead(PlayerName, bool),
     /// How much life a player has.
     HasLife(PlayerName, u16),
+    /// How long time it takes for hand weapon to recharge.
+    MillisecondsToRecharge(PlayerName, Hand, u16),
 }
 
 fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) -> Option<Expr> {
@@ -268,6 +274,12 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
             }
         }
 
+        if let SetWeaponRechargeMilliseconds(weapon, recharge_milliseconds) = *expr {
+            if let Some(weapon_id) = *state.weapon_mut(weapon) {
+                world.weapons[weapon_id].recharge_milliseconds = recharge_milliseconds;
+            }
+        }
+
         if let SetWeaponPlanetDestroyer(weapon, value) = *expr {
             if let Some(weapon_id) = *state.weapon_mut(weapon) {
                 world.weapons[weapon_id].planet_destroyer = value;
@@ -293,6 +305,12 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
                 if let Some(target_id) = *state.player_mut(target) {
                     world.shoot_at_player(shooter_id, hand, target_id);
                 }
+            }
+        }
+
+        if let ShootAtNothing(player, hand) = *expr {
+            if let Some(player_id) = *state.player_mut(player) {
+                world.shoot_at_nothing(player_id, hand);
             }
         }
     }
@@ -446,6 +464,14 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 
             let new_expr = IsDead(player, world.players[player_id].dead);
             if can_add(&new_expr) {return Some(new_expr)};
+
+            let left_recharge_ms = world.players[player_id].left_recharge_milliseconds;
+            let new_expr = MillisecondsToRecharge(player, Hand::Left, left_recharge_ms);
+            if can_add(&new_expr) {return Some(new_expr)};
+
+            let right_recharge_ms = world.players[player_id].right_recharge_milliseconds;
+            let new_expr = MillisecondsToRecharge(player, Hand::Right, right_recharge_ms);
+            if can_add(&new_expr) {return Some(new_expr)};
         }
     }
 
@@ -493,22 +519,20 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
+            CreatePlanet(Tellar),
+
             CreateWeapon(XV43),
-            SetWeaponFirepower(XV43, 100),
+            SetWeaponPlanetDestroyer(XV43, false),
+            // Wait 1 second between each shot.
+            SetWeaponRechargeMilliseconds(XV43, 1000),
 
             CreatePlayer(Alice),
             AssignWeapon(Alice, XV43, Hand::Left),
-            CreatePlayer(Bob),
-            SetLife(Bob, 200),
 
-            ShootAtPlayer(Alice, Hand::Left, Bob),
-            ShootAtPlayer(Alice, Hand::Left, Bob),
+            ShootAtPlanet(Alice, Hand::Left, Tellar),
         ],
         vec![
-            HasLife(Bob, 0),
-            NumberOfPlayersLeft(1),
-            IsDead(Bob, true),
-            IsDead(Alice, false),
+            MillisecondsToRecharge(Alice, Hand::Left, 1000),
             Sound,
         ]
     )
@@ -554,6 +578,10 @@ fn main() {
             (test::destroy_planet_with_planet_destroyer_weapon, true),
             (test::shoot_at_player, true),
             (test::shoot_player_dead, true),
+            (test::recharge_when_shooting_at_nothing, true),
+            (test::recharge_when_shooting_at_player, true),
+            (test::recharge_when_shooting_at_planet, true),
+            (test::recharge_when_shooting_at_planet_even_weapon_is_not_planet_destroyer, true),
         ]);
 
     let (start, goal) = test();

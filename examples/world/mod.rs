@@ -52,9 +52,11 @@ pub struct Spaceport {
 }
 
 pub const DEFAULT_WEAPON_FIREPOWER: u16 = 1000;
+pub const DEFAULT_WEAPON_RECHARGE_MILLISECONDS: u16 = 100;
 
 pub struct Weapon {
     pub firepower: u16,
+    pub recharge_milliseconds: u16,
     pub planet_destroyer: bool,
 }
 
@@ -69,6 +71,8 @@ pub const DEFAULT_PLAYER_LIFE: u16 = 1000;
 pub struct Player {
     pub left_weapon: Option<usize>,
     pub right_weapon: Option<usize>,
+    pub left_recharge_milliseconds: u16,
+    pub right_recharge_milliseconds: u16,
     pub species: Option<usize>,
     pub life: u16,
     pub dead: bool,
@@ -79,6 +83,13 @@ impl Player {
         match hand {
             Hand::Left => &mut self.left_weapon,
             Hand::Right => &mut self.right_weapon,
+        }
+    }
+
+    pub fn recharge_milliseconds_mut(&mut self, hand: Hand) -> &mut u16 {
+        match hand {
+            Hand::Left => &mut self.left_recharge_milliseconds,
+            Hand::Right => &mut self.right_recharge_milliseconds,
         }
     }
 
@@ -299,6 +310,7 @@ impl World {
         let id = self.weapons.len();
         self.weapons.push(Weapon {
             firepower: DEFAULT_WEAPON_FIREPOWER,
+            recharge_milliseconds: DEFAULT_WEAPON_RECHARGE_MILLISECONDS,
             planet_destroyer: false,
         });
         id
@@ -310,6 +322,8 @@ impl World {
         self.players.push(Player {
             left_weapon: None,
             right_weapon: None,
+            left_recharge_milliseconds: 0,
+            right_recharge_milliseconds: 0,
             species: None,
             life: DEFAULT_PLAYER_LIFE,
             dead: false,
@@ -423,6 +437,11 @@ impl World {
         planet_id: usize
     ) {
         if let Some(weapon_id) = *self.players[player_id].weapon_mut(hand) {
+            // Recharge weapon.
+            let recharge_milliseconds = self.weapons[weapon_id].recharge_milliseconds;
+            *self.players[player_id].recharge_milliseconds_mut(hand) = recharge_milliseconds;
+
+            // Hit planet.
             if self.weapons[weapon_id].planet_destroyer {
                 self.planets[planet_id].destroyed = true;
             }
@@ -437,6 +456,11 @@ impl World {
         target_id: usize
     ) {
         if let Some(weapon_id) = *self.players[shooter_id].weapon_mut(hand) {
+            // Recharge weapon.
+            let recharge_milliseconds = self.weapons[weapon_id].recharge_milliseconds;
+            *self.players[shooter_id].recharge_milliseconds_mut(hand) = recharge_milliseconds;
+
+            // Hit target player.
             let firepower = self.weapons[weapon_id].firepower;
             let life = self.players[target_id].life;
             if firepower >= life {
@@ -445,6 +469,18 @@ impl World {
             } else {
                 self.players[target_id].life -= firepower;
             }
+        }
+    }
+
+    /// Player shoots at nothing.
+    pub fn shoot_at_nothing(
+        &mut self,
+        player_id: usize,
+        hand: Hand
+    ) {
+        if let Some(weapon_id) = *self.players[player_id].weapon_mut(hand) {
+            let recharge_milliseconds = self.weapons[weapon_id].recharge_milliseconds;
+            *self.players[player_id].recharge_milliseconds_mut(hand) = recharge_milliseconds;
         }
     }
 }
