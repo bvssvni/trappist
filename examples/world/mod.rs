@@ -74,6 +74,7 @@ pub struct Player {
     pub left_recharge_milliseconds: u16,
     pub right_recharge_milliseconds: u16,
     pub species: Option<usize>,
+    pub on_planet: Option<usize>,
     pub life: u16,
     pub dead: bool,
 }
@@ -292,7 +293,6 @@ impl World {
         id
     }
 
-    /// Returns the spaceport located at city, if any.
     pub fn city_spaceport(&self, city_id: usize) -> Option<usize> {
         if let Some(planet_id) = self.cities[city_id].planet {
             if let Some(location) = self.cities[city_id].location {
@@ -325,6 +325,7 @@ impl World {
             left_recharge_milliseconds: 0,
             right_recharge_milliseconds: 0,
             species: None,
+            on_planet: None,
             life: DEFAULT_PLAYER_LIFE,
             dead: false,
         });
@@ -515,6 +516,16 @@ impl World {
             } else {
                 player.right_recharge_milliseconds -= recharge_milliseconds;
             }
+        }
+    }
+
+    /// Spawns player.
+    pub fn spawn(
+        &mut self,
+        player_id: usize
+    ) {
+        if let Some(planet_id) = self.players[player_id].spawning_planet(self) {
+            self.players[player_id].on_planet = Some(planet_id);
         }
     }
 }
