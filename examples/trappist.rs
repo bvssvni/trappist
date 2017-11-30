@@ -65,8 +65,12 @@ pub enum Expr {
     PopulateCity(CityName, u64, SpeciesName),
     /// Drops player's weapon by hand.
     DropWeapon(PlayerName, Hand),
+    /// Shoot at another player.
+    ShootAtPlayer(PlayerName, Hand, PlayerName),
     /// Kills player.
     Kill(PlayerName),
+    /// Set player life.
+    SetLife(PlayerName, u16),
     /// Set weapon firepower.
     SetWeaponFirepower(WeaponName, u16),
     /// Set weapon to be planet destroyer.
@@ -125,6 +129,10 @@ pub enum Expr {
     NumberOfWeaponUsers(WeaponName, usize),
     /// Whether planet is destroyed.
     IsPlanetDestroyed(PlanetName, bool),
+    /// Whether player is dead.
+    IsDead(PlayerName, bool),
+    /// How much life a player has.
+    HasLife(PlayerName, u16),
 }
 
 fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) -> Option<Expr> {
@@ -248,6 +256,12 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
             }
         }
 
+        if let SetLife(player, life) = *expr {
+            if let Some(player_id) = *state.player_mut(player) {
+                world.players[player_id].life = life;
+            }
+        }
+
         if let SetWeaponFirepower(weapon, firepower) = *expr {
             if let Some(weapon_id) = *state.weapon_mut(weapon) {
                 world.weapons[weapon_id].firepower = firepower;
@@ -268,11 +282,16 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 
         if let ShootAtPlanet(player, hand, planet) = *expr {
             if let Some(player_id) = *state.player_mut(player) {
-                if let Some(weapon_id) = *world.players[player_id].weapon_mut(hand) {
-                    if world.weapons[weapon_id].planet_destroyer {
-                        let new_expr = DestroyPlanet(planet);
-                        if can_add(&new_expr) {return Some(new_expr)};
-                    }
+                if let Some(planet_id) = *state.planet_mut(planet) {
+                    world.shoot_at_planet(player_id, hand, planet_id);
+                }
+            }
+        }
+
+        if let ShootAtPlayer(shooter, hand, target) = *expr {
+            if let Some(shooter_id) = *state.player_mut(shooter) {
+                if let Some(target_id) = *state.player_mut(target) {
+                    world.shoot_at_player(shooter_id, hand, target_id);
                 }
             }
         }
@@ -421,6 +440,12 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
                     if can_add(&new_expr) {return Some(new_expr)};
                 }
             }
+
+            let new_expr = HasLife(player, world.players[player_id].life);
+            if can_add(&new_expr) {return Some(new_expr)};
+
+            let new_expr = IsDead(player, world.players[player_id].dead);
+            if can_add(&new_expr) {return Some(new_expr)};
         }
     }
 
@@ -468,17 +493,22 @@ fn infer(cache: &HashSet<Expr>, filter_cache: &HashSet<Expr>, story: &[Expr]) ->
 pub fn test() -> (Vec<Expr>, Vec<Expr>) {
     (
         vec![
-            CreateWeapon(AM0),
-            SetWeaponFirepower(AM0, 10000),
-            SetWeaponPlanetDestroyer(AM0, true),
+            CreateWeapon(XV43),
+            SetWeaponFirepower(XV43, 100),
 
-            CreatePlanet(Tellar),
             CreatePlayer(Alice),
-            AssignWeapon(Alice, AM0, Hand::Left),
-            ShootAtPlanet(Alice, Hand::Left, Tellar),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            SetLife(Bob, 200),
+
+            ShootAtPlayer(Alice, Hand::Left, Bob),
+            ShootAtPlayer(Alice, Hand::Left, Bob),
         ],
         vec![
-            IsPlanetDestroyed(Tellar, true),
+            HasLife(Bob, 0),
+            NumberOfPlayersLeft(1),
+            IsDead(Bob, true),
+            IsDead(Alice, false),
             Sound,
         ]
     )
@@ -522,6 +552,8 @@ fn main() {
             // 30
             (test::set_weapon_firepower, true),
             (test::destroy_planet_with_planet_destroyer_weapon, true),
+            (test::shoot_at_player, true),
+            (test::shoot_player_dead, true),
         ]);
 
     let (start, goal) = test();

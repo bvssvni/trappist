@@ -64,10 +64,13 @@ pub enum Hand {
     Right,
 }
 
+pub const DEFAULT_PLAYER_LIFE: u16 = 1000;
+
 pub struct Player {
     pub left_weapon: Option<usize>,
     pub right_weapon: Option<usize>,
     pub species: Option<usize>,
+    pub life: u16,
     pub dead: bool,
 }
 
@@ -308,6 +311,7 @@ impl World {
             left_weapon: None,
             right_weapon: None,
             species: None,
+            life: DEFAULT_PLAYER_LIFE,
             dead: false,
         });
         id
@@ -409,5 +413,38 @@ impl World {
             }
         }
         sum
+    }
+
+    /// Player shoots at planet.
+    pub fn shoot_at_planet(
+        &mut self,
+        player_id: usize,
+        hand: Hand,
+        planet_id: usize
+    ) {
+        if let Some(weapon_id) = *self.players[player_id].weapon_mut(hand) {
+            if self.weapons[weapon_id].planet_destroyer {
+                self.planets[planet_id].destroyed = true;
+            }
+        }
+    }
+
+    /// Player shoots at another player.
+    pub fn shoot_at_player(
+        &mut self,
+        shooter_id: usize,
+        hand: Hand,
+        target_id: usize
+    ) {
+        if let Some(weapon_id) = *self.players[shooter_id].weapon_mut(hand) {
+            let firepower = self.weapons[weapon_id].firepower;
+            let life = self.players[target_id].life;
+            if firepower >= life {
+                self.players[target_id].life = 0;
+                self.players[target_id].dead = true;
+            } else {
+                self.players[target_id].life -= firepower;
+            }
+        }
     }
 }

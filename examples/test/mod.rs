@@ -592,6 +592,50 @@ pub fn destroy_planet_with_planet_destroyer_weapon() -> (Vec<Expr>, Vec<Expr>) {
     )
 }
 
+pub fn shoot_at_player() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+            SetWeaponFirepower(XV43, 100),
+
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            SetLife(Bob, 200),
+
+            ShootAtPlayer(Alice, Hand::Left, Bob),
+        ],
+        vec![
+            HasLife(Bob, 100),
+            Sound,
+        ]
+    )
+}
+
+pub fn shoot_player_dead() -> (Vec<Expr>, Vec<Expr>) {
+    (
+        vec![
+            CreateWeapon(XV43),
+            SetWeaponFirepower(XV43, 100),
+
+            CreatePlayer(Alice),
+            AssignWeapon(Alice, XV43, Hand::Left),
+            CreatePlayer(Bob),
+            SetLife(Bob, 200),
+
+            ShootAtPlayer(Alice, Hand::Left, Bob),
+            ShootAtPlayer(Alice, Hand::Left, Bob),
+        ],
+        vec![
+            HasLife(Bob, 0),
+            NumberOfPlayersLeft(1),
+            IsDead(Bob, true),
+            IsDead(Alice, false),
+            Sound,
+        ]
+    )
+}
+
 /// Checks a list of tests.
 pub fn check(fs: &[(fn() -> (Vec<Expr>, Vec<Expr>), bool)]) {
     for (i, &(f, ok)) in fs.iter().enumerate() {
